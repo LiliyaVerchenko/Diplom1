@@ -2,9 +2,6 @@ from pprint import pprint
 import os
 import json
 import requests
-import time
-from tqdm import tqdm
-from collections import OrderedDict
 
 class Backup_copying():
     def __init__(self, token: str, user_id: str):
@@ -47,13 +44,11 @@ class Backup_copying():
     def upload_photos(self, path):    # загружаем фото на яндекс диск
         self.path = path
         file_list = os.listdir(self.path)    # получаем список файлов в директории
-
         path_list = []                        # получаем список путей к каждому файлу
         for file in file_list:
             path = os.path.join(self.path, file)
             path_list.append(path)
-                                                                # создаем папку на Диске
-        create_folder = requests.put('https://cloud-api.yandex.net:443/v1/disk/resources?path=%2FPhoto_VK',
+        create_folder = requests.put('https://cloud-api.yandex.net:443/v1/disk/resources?path=%2FPhoto_VK',   # создаем папку на Диске
                                      headers=self.headers_YD)
         for i, path1 in enumerate(path_list, 1):     # открываем и читаем каждый файл
             with open(path1, 'rb') as f:
@@ -61,13 +56,18 @@ class Backup_copying():
                                                      # получаем ссылку для загрузки на диск
             link_upload = requests.get(f'https://cloud-api.yandex.net:443/v1/disk/resources/upload?path=/Photo_VK/{os.path.basename(path1)}',
                                        headers=self.headers_YD).json()['href']
+            # получение статуса загрузки
+            operation_id = requests.get(f'https://cloud-api.yandex.net:443/v1/disk/resources/upload?path=/Photo_VK/{os.path.basename(path1)}',
+                                        headers=self.headers_YD).json()['operation_id']
             upload = requests.put(link_upload, headers=self.headers_YD, data=_file)  # загружаем файл на диск по ссылке
-            for k in tqdm(range(5)):
+            while True:   # прогресс бар
+                status = requests.get(f'https://cloud-api.yandex.net/v1/disk/operations/{operation_id}', headers=self.headers_YD).json()['status']
+                if status == 'in-progress':
+                    break
                 time.sleep(1)
             print(f'Изображение "{os.path.basename(path1)}" {str(i)}/{str(len(path_list))} успешно загружено на диск')
         print()
         return print('Загрузка завершена')
-
 
 if __name__ == '__main__':
     token1 = input('Введите токен с Полигона Яндекс.Диска ')
