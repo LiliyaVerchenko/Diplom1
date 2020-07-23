@@ -11,9 +11,16 @@ class Backup_copying():
         self.user_id = user_id
 
     def download_photosVK(self): # сохранение фото в локальную папку
-        params = {'access_token': '958eb5d439726565e9333aa30e50e0f937ee432e927f0dbd541c541887d919a7c56f95c04217915c32008',
-                  'owner_id': self.user_id, 'photo_sizes': '1', 'album_id': 'profile', 'extended': '1', 'count': '5', 'v': 5.21}
-        get_photos = requests.get('https://api.vk.com/method/photos.get', params=params).json()['response']['items']
+        # получаем фото со стены
+        params_wall = {'access_token': '958eb5d439726565e9333aa30e50e0f937ee432e927f0dbd541c541887d919a7c56f95c04217915c32008',
+                       'owner_id': self.user_id, 'photo_sizes': '1', 'album_id': 'wall', 'extended': '1', 'count': '5', 'v': 5.21}
+        get_photos_wall = requests.get('https://api.vk.com/method/photos.get', params=params_wall).json()['response']['items']
+        # получаем фото профиля
+        params_profile = {'access_token': '958eb5d439726565e9333aa30e50e0f937ee432e927f0dbd541c541887d919a7c56f95c04217915c32008',
+                          'owner_id': self.user_id, 'photo_sizes': '1', 'album_id': 'profile', 'extended': '1', 'count': '5', 'v': 5.21}
+        get_photos_profile = requests.get('https://api.vk.com/method/photos.get', params=params_profile).json()['response']['items']
+        # получаем общий список фото
+        get_photos = get_photos_wall + get_photos_profile
         file_photo1 = []  # создаем список с выгрузкой в него необходимых параметров
         for photo in get_photos:
             file_photo1.append({'likes': photo['likes']['count'], 'date_upload': photo['date'],
