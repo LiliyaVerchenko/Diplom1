@@ -2,6 +2,7 @@ from pprint import pprint
 import os
 import json
 import requests
+import time
 
 class Backup_copying():
     def __init__(self, token: str, user_id: str):
@@ -53,16 +54,15 @@ class Backup_copying():
         for i, path1 in enumerate(path_list, 1):     # открываем и читаем каждый файл
             with open(path1, 'rb') as f:
                 _file = f.read()
-                                                     # получаем ссылку для загрузки на диск
-            link_upload = requests.get(f'https://cloud-api.yandex.net:443/v1/disk/resources/upload?path=/Photo_VK/{os.path.basename(path1)}',
-                                       headers=self.headers_YD).json()['href']
-            # получение статуса загрузки
-            operation_id = requests.get(f'https://cloud-api.yandex.net:443/v1/disk/resources/upload?path=/Photo_VK/{os.path.basename(path1)}',
-                                        headers=self.headers_YD).json()['operation_id']
+                                                     # получаем ссылку для загрузки на диск и статус загрузки
+            response = requests.get(f'https://cloud-api.yandex.net:443/v1/disk/resources/upload?path=/Photo_VK/{os.path.basename(path1)}',
+                                       headers=self.headers_YD).json()
+            link_upload = response['href']
+            operation_id = response['operation_id']
             upload = requests.put(link_upload, headers=self.headers_YD, data=_file)  # загружаем файл на диск по ссылке
             while True:   # прогресс бар
                 status = requests.get(f'https://cloud-api.yandex.net/v1/disk/operations/{operation_id}', headers=self.headers_YD).json()['status']
-                if status == 'in-progress':
+                if status == 'success':
                     break
                 time.sleep(1)
             print(f'Изображение "{os.path.basename(path1)}" {str(i)}/{str(len(path_list))} успешно загружено на диск')
